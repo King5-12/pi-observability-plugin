@@ -864,7 +864,7 @@ describe("integration: pi -> extension -> Langfuse export", () => {
       const toolStep = outputOf(firstTurn[0]!);
       assert.equal(toolStep.thinking, undefined, "a step that did not reason carries no thinking block");
       assert.deepEqual(toolStep.tool_calls, [
-        { id: toolStep.tool_calls![0]!.id, type: "function", function: { name: "bash" } },
+        { id: toolStep.tool_calls![0]!.id, type: "function", function: { name: "bash", arguments: JSON.stringify({ command: "ls" }) } },
       ]);
 
       const reasoning = history.filter((m) => m.thinking);
@@ -882,7 +882,9 @@ describe("integration: pi -> extension -> Langfuse export", () => {
 
       const exported = JSON.stringify(capture.requests);
       assert.ok(!exported.includes("thinkingSignature"), "the signature blob must not be traced");
-      assert.ok(!exported.includes("reasoning_content"), "the raw provider field must not be traced");
+      assert.ok(!JSON.stringify(inputOf(secondTurn[0]!)).includes("reasoning_content"), "readable messages use normalized thinking");
+      const rawRequest = JSON.parse(String(secondTurn[0]!.attrs["langfuse.observation.metadata.provider_request"]));
+      assert.ok(JSON.stringify(rawRequest).includes("reasoning_content"), "the provider snapshot preserves wire fields");
 
       const sent = mock.sentMessages.slice(firstCall);
       const withReasoning = sent.at(-1)!.filter((m) => m.reasoning_content);

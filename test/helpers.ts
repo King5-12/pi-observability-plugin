@@ -428,6 +428,8 @@ export function runPi(
     "--api-key",
     "mock-key",
     "--no-context-files",
+    "--no-skills",
+    "--no-extensions",
   );
   if (opts.continue) args.push("-c");
   args.push("-p", prompt);

@@ -1,3 +1,6 @@
+> Personal fork: [King5-12/pi-observability-plugin](https://github.com/King5-12/pi-observability-plugin).
+> Adds complete provider request snapshots and tool-call arguments. See [FORK.md](FORK.md).
+
 # Langfuse Observability Plugin for pi
 
 This extension sends [pi coding agent](https://pi.dev) sessions to
