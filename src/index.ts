@@ -203,6 +203,11 @@ export function createSecretRedactor(...extraSecrets: string[]): (value: unknown
 
 const redactLangfuseKeys = createSecretRedactor();
 
+/** Snapshot the provider-ready body without changing the request sent by Pi. */
+export function captureProviderRequest(payload: unknown): unknown {
+  return redactLangfuseKeys(payload);
+}
+
 export function readSystemPrompt(ctx: { getSystemPrompt?: () => string | undefined }): string | undefined {
   let raw: unknown;
   try {
@@ -226,8 +231,8 @@ export function extractText(content: unknown): string {
 export function extractToolCalls(content: unknown): ChatMlToolCall[] {
   if (!Array.isArray(content)) return [];
   return content
-    .filter((p): p is { type: string; id: string; name: string } => !!p && typeof p === "object" && (p as { type?: string }).type === "toolCall")
-    .map((p) => ({ id: p.id, type: "function" as const, function: { name: p.name } }));
+    .filter((p): p is { type: string; id: string; name: string; arguments?: unknown } => !!p && typeof p === "object" && (p as { type?: string }).type === "toolCall")
+    .map((p) => ({ id: p.id, type: "function" as const, function: { name: p.name, arguments: JSON.stringify(redactLangfuseKeys(p.arguments ?? {})) } }));
 }
 
 export interface ToolDefinitionInput {
@@ -940,6 +945,9 @@ export default function (pi: ExtensionAPI) {
         modelParameters: extractModelParameters(event.payload, ctx.model, ctx.thinkingLevel),
         metadata: {
           assistant_index: index - 1,
+          provider_request: captureProviderRequest(event.payload),
+          provider_request_capture: "before_provider_request.payload",
+          provider_request_truncated: false,
           input_source: history ? "context" : "delta",
           ...(history ? { history_message_count: history.length } : {}),
           ...(ctx.model ? { provider: ctx.model.provider, context_window: ctx.model.contextWindow } : {}),
